@@ -72,28 +72,26 @@ func main() {
 
 	gl.Viewport(0, 0, int32(width), int32(height))
 
-	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	vertex_shader_byte_ptr, free1 := gl.Strs(vertex_shader_source)
-	gl.ShaderSource(vertexShader, 1, vertex_shader_byte_ptr, nil)
-	gl.CompileShader(vertexShader)
-	checkCompilation(vertexShader, "vertex shader")
-	free1()
+	vs := NewVertexShaderCompiler(vertex_shader_source)
+	err = vs.CreateAndCompile()
+	if err != nil {
+		panic(err)
+	}
 
-	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
-	fragment_shader_byte_ptr, free2 := gl.Strs(fragment_shader_source)
-	gl.ShaderSource(fragmentShader, 1, fragment_shader_byte_ptr, nil)
-	gl.CompileShader(fragmentShader)
-	free2()
-	checkCompilation(vertexShader, "fragment shader")
+	fs := NewFragmentShaderCompiler(fragment_shader_source)
+	err = fs.CreateAndCompile()
+	if err != nil {
+		panic(err)
+	}
 
 	shaderProgram := gl.CreateProgram()
-	gl.AttachShader(shaderProgram, vertexShader)
-	gl.AttachShader(shaderProgram, fragmentShader)
+	gl.AttachShader(shaderProgram, vs.ID)
+	gl.AttachShader(shaderProgram, fs.ID)
 	gl.LinkProgram(shaderProgram)
 	checkLinking(shaderProgram, "shader program")
 
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragmentShader)
+	vs.Delete()
+	fs.Delete()
 
 	vertices := []float32{
 		-0.5, -0.5, 0.0,
@@ -147,20 +145,6 @@ func createWindow() *glfw.Window {
 	return window
 }
 
-func checkCompilation(shader uint32, msg string) {
-	var status int32
-	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		logLength := int32(512)
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
-		fmt.Println(log)
-		panic("didn't compile shader")
-	} else {
-		fmt.Println("successfully compiled", msg)
-	}
-}
-
 func checkLinking(program uint32, msg string) {
 	var status int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
@@ -195,4 +179,4 @@ void main()
 {
 	color = vec4(1.0f, 0.5f, 0.2f, 1.0f);
 }
-`
+` + "\x00"
