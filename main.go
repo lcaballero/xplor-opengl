@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"runtime"
+	"math"
 )
 
 func init() {
@@ -65,7 +66,14 @@ func main() {
 		gl.ClearColor(0.0, 0.0, 0.4, 0.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
+		t := glfw.GetTime()
+		g := (math.Sin(t) / 2.0) + 0.5
+		greenValue := float32(g)
+		varName := gl.Str("ourColor\x00")
+		colorLocation := gl.GetUniformLocation(p.GetID(), varName)
+
 		p.UseProgram()
+		gl.Uniform4f(colorLocation, 0.0, greenValue, 0.0, 1.0)
 
 		gl.BindVertexArray(vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, 3)

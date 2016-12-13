@@ -15,6 +15,10 @@ func NewShaderProgram() *ShaderProgram {
 	return &ShaderProgram{}
 }
 
+func (p *ShaderProgram) GetID() uint32 {
+	return p.id
+}
+
 func (p *ShaderProgram) Attach(shaders ...Shader) error {
 	p.shaders = shaders
 	for _, s := range shaders {
