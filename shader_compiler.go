@@ -2,53 +2,72 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"strings"
-	"fmt"
+	"io/ioutil"
 )
 
 var ErrNotImplementedYet = errors.New("err not implemented yet")
 
-type ShaderCompiler struct {
-	ID uint32
-	kind uint32
+type Shader interface {
+	GetID() uint32
+	Compile() error
+	Delete()
+}
+
+type shader struct {
+	id uint32
 	source string
-	msg string
+	msg    string
 }
 
-func NewVertexShaderCompiler(source string) *ShaderCompiler {
-	sc := &ShaderCompiler{
-		source: source,
-		kind: gl.VERTEX_SHADER,
-		msg: "vertex shader",
+func NewVertexCompiler(filename string) Shader {
+	sc := &shader{
+		id:     gl.CreateShader(gl.VERTEX_SHADER),
+		source: MustRead(filename),
+		msg:    "vertex shader",
 	}
 	return sc
 }
 
-func NewFragmentShaderCompiler(source string) *ShaderCompiler {
-	sc := &ShaderCompiler{
-		source: source,
-		kind: gl.FRAGMENT_SHADER,
-		msg: "fragment shader",
+func NewFragmentCompiler(filename string) Shader {
+	sc := &shader{
+		id: gl.CreateShader(gl.FRAGMENT_SHADER),
+		source: MustRead(filename),
+		msg:    "fragment shader",
 	}
 	return sc
 }
 
-func (sc *ShaderCompiler) Delete() {
-	gl.DeleteShader(sc.ID)
+func MustRead(filename string) string {
+	bin, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	bin = append(bin, byte(0))
+	return string(bin)
 }
 
-func (sc *ShaderCompiler) CreateAndCompile() error {
-	sc.ID = gl.CreateShader(sc.kind)
+
+func (sc *shader) GetID() uint32 {
+	return sc.id
+}
+
+func (sc *shader) Delete() {
+	gl.DeleteShader(sc.id)
+}
+
+func (sc *shader) Compile() error {
 	shaderBytes, free := gl.Strs(sc.source)
 	defer free()
 
-	gl.ShaderSource(sc.ID, 1, shaderBytes, nil)
-	gl.CompileShader(sc.ID)
-	return sc.checkCompilation(sc.ID, sc.msg)
+	gl.ShaderSource(sc.id, 1, shaderBytes, nil)
+	gl.CompileShader(sc.id)
+	return sc.checkCompilation(sc.id, sc.msg)
 }
 
-func (sc *ShaderCompiler) checkCompilation(id uint32, msg string) error {
+func (sc *shader) checkCompilation(id uint32, msg string) error {
 	var status int32
 	gl.GetShaderiv(id, gl.COMPILE_STATUS, &status)
 	if status == gl.FALSE {
@@ -63,4 +82,3 @@ func (sc *ShaderCompiler) checkCompilation(id uint32, msg string) error {
 		return nil
 	}
 }
-
