@@ -5,6 +5,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"runtime"
 	"math"
+	"time"
+	"fmt"
 )
 
 func init() {
@@ -60,25 +62,39 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindVertexArray(0)
 
+	tic := time.NewTicker(1 * time.Second)
+	frames := 0
+
 	for !window.ShouldClose() {
-		glfw.PollEvents()
+		select {
+		case <- tic.C:
+			fmt.Printf("frames %d / sec\n", frames)
+			frames = 0
+		default:
+			glfw.PollEvents()
+			frames++
 
-		gl.ClearColor(0.0, 0.0, 0.4, 0.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+			gl.ClearColor(0.0, 0.0, 0.4, 0.0)
+			gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		t := glfw.GetTime()
-		g := (math.Sin(t) / 2.0) + 0.5
-		greenValue := float32(g)
-		varName := gl.Str("ourColor\x00")
-		colorLocation := gl.GetUniformLocation(p.GetID(), varName)
+			varName := gl.Str("ourColor\x00")
+			colorLocation := gl.GetUniformLocation(p.GetID(), varName)
 
-		p.UseProgram()
-		gl.Uniform4f(colorLocation, 0.0, greenValue, 0.0, 1.0)
+			p.UseProgram()
+			gl.Uniform4f(colorLocation, 0.0, GreenValue(), 0.0, 1.0)
 
-		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		gl.BindVertexArray(0)
+			gl.BindVertexArray(vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, 3)
+			gl.BindVertexArray(0)
 
-		window.SwapBuffers()
+			window.SwapBuffers()
+		}
 	}
+}
+
+func GreenValue() float32 {
+	t := glfw.GetTime()
+	g := (math.Sin(t) / 2.0) + 0.5
+	greenValue := float32(g)
+	return greenValue
 }
