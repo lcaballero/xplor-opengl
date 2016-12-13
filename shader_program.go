@@ -28,9 +28,8 @@ func (p *ShaderProgram) Attach(shaders ...Shader) error {
 		gl.AttachShader(p.id, s.GetID())
 	}
 	gl.LinkProgram(p.id)
-	p.checkLinking()
 
-	return nil
+	return p.checkLinking()
 }
 
 func (p *ShaderProgram) UseProgram() {
