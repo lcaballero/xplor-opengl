@@ -56,7 +56,7 @@ func (win *Window) Create() error {
 		win.Title = DefaultTitle
 	}
 
-	win.window, err = glfw.CreateWindow(640, 480, win.Title, nil, nil)
+	win.window, err = glfw.CreateWindow(800, 800, win.Title, nil, nil)
 	if err != nil {
 		return err
 	}
