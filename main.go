@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"image/jpeg"
 	"image/color"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 func init() {
@@ -26,7 +27,25 @@ func closeWindow(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 	}
 }
 
+func transforms1() {
+	v := mgl32.Vec4{1.0, 0.0, 0.0, 1.0}
+	trans := mgl32.Translate3D(1.0, 1.0, 0.0)
+	pos := trans.Mul4x1(v)
+	fmt.Printf("<%f, %f, %f>\n", pos[0], pos[1], pos[2])
+}
+
+func transform(rads, scaleXYZ float32) mgl32.Mat4 {
+	rot := mgl32.HomogRotate3DZ(rads)
+	scale := mgl32.Scale3D(scaleXYZ, scaleXYZ, scaleXYZ)
+	trans := scale.Mul4(rot)
+	return trans
+}
+
 func main() {
+	run()
+}
+
+func run() {
 	window := NewWindow()
 	err := window.Create()
 	if err != nil {
@@ -48,8 +67,8 @@ func main() {
 
 	vertices := []float32{
 		// Positions      // Colors        // Texture Coords
-		 0.5,  0.5, 0.0,  1.0, 0.0, 0.0,   1.0, 1.0,  // Top Right
-		 0.5, -0.5, 0.0,  0.0, 1.0, 0.0,   1.0, 0.0,  // Bottom Right
+		0.5,  0.5, 0.0,  1.0, 0.0, 0.0,   1.0, 1.0,  // Top Right
+		0.5, -0.5, 0.0,  0.0, 1.0, 0.0,   1.0, 0.0,  // Bottom Right
 		-0.5, -0.5, 0.0,  0.0, 0.0, 1.0,   0.0, 0.0,  // Bottom Left
 		-0.5,  0.5, 0.0,  1.0, 1.0, 0.0,   0.0, 1.0,  // Top Left
 	}
@@ -88,7 +107,7 @@ func main() {
 	gl.BindVertexArray(0)
 
 	imageBytes, w, h := SoilLoadImage()
-//	imageBytes, w, h := LoadImage("container.bmp")
+	//	imageBytes, w, h := LoadImage("container.bmp")
 	fmt.Printf("texture w: %d, h: %d, len: %d\n", w, h, len(imageBytes))
 
 	var texture0 uint32
@@ -107,6 +126,8 @@ func main() {
 
 	tic := time.NewTicker(1 * time.Second)
 	frames := 0
+	var frameRot float32 = math.Pi / 60.0
+	var currRot float32 = 0.0
 
 	for !window.ShouldClose() {
 		select {
@@ -125,6 +146,11 @@ func main() {
 			gl.ActiveTexture(gl.TEXTURE0)
 			gl.BindTexture(gl.TEXTURE_2D, texture0)
 			gl.Uniform1i(gl.GetUniformLocation(p.GetID(), gl.Str("ourTexture\x00")), 0)
+
+			trans := transform(currRot, 0.5)
+			currRot += frameRot
+			loc := gl.GetUniformLocation(p.GetID(), gl.Str("transform\x00"))
+			gl.UniformMatrix4fv(loc, 1, false, &trans[0])
 
 			gl.BindVertexArray(vao)
 			gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, gl.PtrOffset(0))
