@@ -1,20 +1,5 @@
 package main
 
-/*
-#cgo LDFLAGS: -lglew
-
-#include <GL/glew.h>
-
-void TurnOnExperimental() {
-	glewExperimental = GL_TRUE;
-}
-
-void InitGlew() {
-	glewInit();
-}
-*/
-import "C"
-
 import (
 	"fmt"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -68,8 +53,8 @@ func (win *Window) Create() error {
 	win.window.MakeContextCurrent()
 	win.window.SetKeyCallback(closeWindow)
 
-	C.TurnOnExperimental()
-	C.InitGlew()
+	TurnOnExperimental()
+	InitGlew()
 
 	fmt.Printf("opengl version: '%s'\n", gl.GoStr(gl.GetString(gl.VERSION)))
 
