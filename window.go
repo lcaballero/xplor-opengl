@@ -19,6 +19,8 @@ type Window struct {
 	Title string
 }
 
+const Width, Height = 800, 800
+
 /*
 NVIDIA GeForce GT 750M 2048 MB graphics
 */
@@ -47,7 +49,7 @@ func (win *Window) Create() error {
 		win.Title = DefaultTitle
 	}
 
-	win.window, err = glfw.CreateWindow(800, 800, win.Title, nil, nil)
+	win.window, err = glfw.CreateWindow(Width, Height, win.Title, nil, nil)
 	if err != nil {
 		return err
 	}

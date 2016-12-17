@@ -15,6 +15,20 @@ func NewShaderProgram() *ShaderProgram {
 	return &ShaderProgram{}
 }
 
+func NewProgram(vert, frag string) (*ShaderProgram, error) {
+	vs := NewVertexCompiler(vert)
+	fs := NewFragmentCompiler(frag)
+
+	p := NewShaderProgram()
+	err := p.Attach(vs, fs)
+	if err != nil {
+		return nil, err
+	}
+	p.DeleteShaders()
+
+	return p, nil
+}
+
 func (p *ShaderProgram) GetID() uint32 {
 	return p.id
 }
@@ -38,6 +52,11 @@ func (p *ShaderProgram) Attach(shaders ...Shader) error {
 
 func (p *ShaderProgram) UseProgram() {
 	gl.UseProgram(p.id)
+}
+
+func (p *ShaderProgram) UniformLocation(name string) int32 {
+	loc := gl.GetUniformLocation(p.GetID(), gl.Str(name + "\x00"))
+	return loc
 }
 
 func (p *ShaderProgram) DeleteShaders() {

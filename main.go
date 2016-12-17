@@ -4,11 +4,13 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"runtime"
-	"math"
 	"time"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
+	"math"
 )
+
+const Pi = math.Pi
 
 func init() {
 	runtime.LockOSThread()
@@ -34,63 +36,41 @@ func run() {
 	defer window.TerminateWindowing()
 	window.ViewportToFramebufferSize()
 
-	vs := NewVertexCompiler("shaders/shader.vert")
-	fs := NewFragmentCompiler("shaders/shader.frag")
-
-	p := NewShaderProgram()
-	err = p.Attach(vs, fs)
+	p, err := NewProgram("shaders/shader.vert", "shaders/shader.frag")
 	if err != nil {
 		panic(err)
 	}
-	p.DeleteShaders()
 
-	vertices := []float32{
-		// Positions      // Colors        // Texture Coords
-		0.5,   0.5, 0.0,  1.0, 0.0, 0.0,   1.0, 1.0,  // Top Right
-		0.5,  -0.5, 0.0,  0.0, 1.0, 0.0,   1.0, 0.0,  // Bottom Right
-		-0.5, -0.5, 0.0,  0.0, 0.0, 1.0,   0.0, 0.0,  // Bottom Left
-		-0.5,  0.5, 0.0,  1.0, 1.0, 0.0,   0.0, 1.0,  // Top Left
-	}
-
-	indices := []uint32{
-		0, 1, 3,  // First Triangle
-		1, 2, 3,  // Second Triangle
-	}
-
-	texture := LoadTexture("container.jpg")
-
-	var vbo, vao, ebo uint32
+	var vbo, vao uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.GenBuffers(1, &vbo)
-	gl.GenBuffers(1, &ebo)
 
 	gl.BindVertexArray(vao)
 
 	defer gl.DeleteBuffers(1, &vbo)
-	defer gl.DeleteBuffers(1, &ebo)
 	defer gl.DeleteVertexArrays(1, &vao)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
-
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(0)
 
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(3*4))
-	gl.EnableVertexAttribArray(1)
-
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
+	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
 	gl.EnableVertexAttribArray(2)
 
 	gl.BindVertexArray(0)
 
+	texture, err := LoadTexture("container.jpg")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(texture.String())
+
 	tic := time.NewTicker(1 * time.Second)
 	frames := 0
-	var frameRot float32 = math.Pi / 60.0
-	var currRot float32 = 0.0
+	//cubePos := cubePositions[0]
 
 	for !window.ShouldClose() {
 		select {
@@ -108,12 +88,17 @@ func run() {
 
 			gl.ActiveTexture(gl.TEXTURE0)
 			gl.BindTexture(gl.TEXTURE_2D, texture.Id)
-			gl.Uniform1i(gl.GetUniformLocation(p.GetID(), gl.Str("ourTexture\x00")), 0)
+			gl.Uniform1i(p.UniformLocation("ourTexture"), 0)
 
-			trans := transform(currRot, 0.5)
-			currRot += frameRot
-			loc := gl.GetUniformLocation(p.GetID(), gl.Str("transform\x00"))
-			gl.UniformMatrix4fv(loc, 1, false, &trans[0])
+			transformCube(p)
+
+//			angle := 45.0
+			model := mgl32.Ident4()
+//				Mul4(mgl32.Translate3D(0.0, 0.0, 0.0)).
+//				Mul4(mgl32.HomogRotate3DZ(angle))
+			modelLoc := p.UniformLocation("model")
+			gl.UniformMatrix4fv(modelLoc, 1, false, &model[0])
+			gl.DrawArrays(gl.TRIANGLES, 0, 36)
 
 			gl.BindVertexArray(vao)
 			gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, gl.PtrOffset(0))
@@ -122,4 +107,16 @@ func run() {
 			window.SwapBuffers()
 		}
 	}
+}
+
+func transformCube(p *ShaderProgram) {
+	view := mgl32.Ident4()
+	projection := mgl32.Perspective(45.0, float32(Width)/float32(Height), 0.1, 100.0)
+	view = view.Mul4(mgl32.Translate3D(0.0, 0.0, -0.1))
+
+	viewLoc := p.UniformLocation("view")
+	projLoc := p.UniformLocation("projection")
+
+	gl.UniformMatrix4fv(viewLoc, 1, false, &view[0])
+	gl.UniformMatrix4fv(projLoc, 1, false, &projection[0])
 }

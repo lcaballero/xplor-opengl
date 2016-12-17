@@ -15,7 +15,14 @@ type Texture struct {
 	data []byte
 }
 
-func LoadTexture(filename string) *Texture {
+func (t *Texture) String() string {
+	return fmt.Sprintf(
+		"texture: %s, id: %d, w: %d, h: %d, channels: %d, byte count: %d",
+		t.Filename, t.Id, t.width, t.height, t.channels, len(t.data))
+}
+
+func LoadTexture(filename string) (*Texture, error) {
+	//TODO: check that the file exists (else return error)
 	imageBytes, w, h, c := SoilLoadImage(filename)
 	fmt.Printf("texture w: %d, h: %d, len: %d\n", w, h, len(imageBytes))
 
@@ -45,5 +52,5 @@ func LoadTexture(filename string) *Texture {
 		channels: c,
 	}
 
-	return t
+	return t, nil
 }
