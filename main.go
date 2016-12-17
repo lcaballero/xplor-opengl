@@ -70,7 +70,7 @@ func run() {
 
 	tic := time.NewTicker(1 * time.Second)
 	frames := 0
-	//cubePos := cubePositions[0]
+	cubePos := cubePositions[0]
 
 	for !window.ShouldClose() {
 		select {
@@ -82,7 +82,7 @@ func run() {
 			glfw.PollEvents()
 
 			gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-			gl.Clear(gl.COLOR_BUFFER_BIT)
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			p.UseProgram()
 
@@ -91,11 +91,12 @@ func run() {
 			gl.Uniform1i(p.UniformLocation("ourTexture"), 0)
 
 			transformCube(p)
+			gl.BindVertexArray(vao)
 
-//			angle := 45.0
-			model := mgl32.Ident4()
-//				Mul4(mgl32.Translate3D(0.0, 0.0, 0.0)).
-//				Mul4(mgl32.HomogRotate3DZ(angle))
+			var angle float32 = 45.0
+			model := mgl32.Ident4().
+				Mul4(mgl32.Translate3D(cubePos[0], cubePos[1], cubePos[2])).
+				Mul4(mgl32.HomogRotate3DZ(angle))
 			modelLoc := p.UniformLocation("model")
 			gl.UniformMatrix4fv(modelLoc, 1, false, &model[0])
 			gl.DrawArrays(gl.TRIANGLES, 0, 36)
@@ -112,7 +113,7 @@ func run() {
 func transformCube(p *ShaderProgram) {
 	view := mgl32.Ident4()
 	projection := mgl32.Perspective(45.0, float32(Width)/float32(Height), 0.1, 100.0)
-	view = view.Mul4(mgl32.Translate3D(0.0, 0.0, -0.1))
+	view = view.Mul4(mgl32.Translate3D(0.0, 0.0, -3.0))
 
 	viewLoc := p.UniformLocation("view")
 	projLoc := p.UniformLocation("projection")
