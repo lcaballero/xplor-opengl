@@ -8,24 +8,18 @@ package main
  */
 import "C"
 import (
-	"fmt"
 	"unsafe"
 )
 
-func SoilLoadImage() ([]byte, int, int) {
-	image := C.CString("container.jpg")
-	var w, h, p C.int
+func SoilLoadImage(filename string) ([]byte, int, int, int) {
+	image := C.CString(filename)
+	var width, height, channels C.int
 
-	chars := C.SOIL_load_image(image, &w, &h, &p, C.SOIL_LOAD_RGB)
-	n := w * h * p
-	fmt.Printf("w: %d, h: %d, p: %d\n", w, h, p)
+	chars := C.SOIL_load_image(image, &width, &height, &channels, C.SOIL_LOAD_RGB)
+	n := width * height * channels
 
 	rawdata := unsafe.Pointer(chars)
 	data := C.GoBytes(rawdata, C.int(n))
 
-	fmt.Println(len(data))
-	fmt.Println(chars == nil)
-
-
-	return data, int(w), int(h)
+	return data, int(width), int(height), int(channels)
 }

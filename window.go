@@ -8,6 +8,12 @@ import (
 
 const DefaultTitle = "Go :: OS X - OpenGL"
 
+func closeWindow(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if key == glfw.KeyEscape && action == glfw.Press {
+		w.SetShouldClose(true)
+	}
+}
+
 type Window struct {
 	window *glfw.Window
 	Title string
