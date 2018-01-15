@@ -5,6 +5,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"runtime"
 	"math"
+	mgl "github.com/go-gl/mathgl/mgl32"
+	"fmt"
 )
 
 func init() {
@@ -37,10 +39,12 @@ func main() {
 	}
 	p.DeleteShaders()
 
+	var w, h float32 = 640.0, 480.0
+
 	vertices := []float32{
-		-0.5, -0.5, 0.0,
-		0.5, -0.5, 0.0,
-		0.0, 0.5, 0.0,
+		-w*0.5, -h*0.5, 0.0,
+		 w*0.5, -h*0.5, 0.0,
+		 0.0,  h*0.5, 0.0,
 	}
 
 	var vbo, vao uint32
@@ -60,6 +64,24 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindVertexArray(0)
 
+	varName := gl.Str("ourColor\x00")
+
+	orthoName := gl.Str("ortho\x00")
+
+	orthoMat := Ortho(w, h)
+	view := mgl.LookAtV(
+		mgl.Vec3{ 0, 0, -1 }, // center (from)
+		mgl.Vec3{ 0, 0,  1 }, // to (eye)
+		mgl.Vec3{ 0, 1,  0 }, // up
+	)
+	model := mgl.Ident4()
+
+	mvp := orthoMat.Mul4(view.Mul4(model))
+	matrixLoc := gl.GetUniformLocation(p.GetID(), orthoName)
+	colorLocation := gl.GetUniformLocation(p.GetID(), varName)
+
+	fmt.Println(orthoMat)
+
 	for !window.ShouldClose() {
 		glfw.PollEvents()
 
@@ -69,10 +91,9 @@ func main() {
 		t := glfw.GetTime()
 		g := (math.Sin(t) / 2.0) + 0.5
 		greenValue := float32(g)
-		varName := gl.Str("ourColor\x00")
-		colorLocation := gl.GetUniformLocation(p.GetID(), varName)
 
 		p.UseProgram()
+		gl.UniformMatrix4fv(matrixLoc, 1, false, &mvp[0])
 		gl.Uniform4f(colorLocation, 0.0, greenValue, 0.0, 1.0)
 
 		gl.BindVertexArray(vao)
@@ -81,4 +102,18 @@ func main() {
 
 		window.SwapBuffers()
 	}
+}
+
+func Ortho(w, h float32) mgl.Mat4 {
+	cw := w / 2.0
+	ch := h / 2.0
+	mat := mgl.Ortho(
+		-cw,
+		 cw,
+		 ch,
+		-ch,
+		0.0,
+		1.0,
+	)
+	return mat
 }
